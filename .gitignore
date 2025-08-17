@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual Environment
+.venv/
+venv/
+.env
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+test.db
+!frc_components.db
+
+\temp
+
+# IDE
+.vscode/
+.idea/
+*.swp
