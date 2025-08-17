@@ -14,7 +14,7 @@ This API helps FRC teams:
 ## 🛠️ **Features**
 
 ### **Public Component Catalog**
-A shared database of common FRC components including:
+A shared database of 46+ real FRC components including:
 - ⚡ **Motors** (NEO, Falcon 500, CIM, etc.)
 - 🎮 **Motor Controllers** (SPARK MAX, Talon SRX, etc.)
 - 🔌 **Electronics** (roboRIO, Power Distribution Hub, etc.)
@@ -32,4 +32,7 @@ Each team can:
 
 ## 📚 **API Documentation**
 
-To be added later. Currently, documentation is generated using Swagger.
+**Live API**: https://frc-components-api.onrender.com  
+**Interactive Docs**: https://frc-components-api.onrender.com/docs  
+
+The API includes 13 endpoints for full CRUD operations on FRC components and team inventory management.

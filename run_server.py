@@ -8,6 +8,6 @@ if __name__ == "__main__":
         "app.main:app",
         host="0.0.0.0",
         port=port,
-        reload=True,  # TODO: Set to False in production
+        reload=False,
         log_level="info"
     )
