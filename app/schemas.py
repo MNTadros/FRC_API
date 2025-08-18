@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
+from datetime import datetime
 
 class PublicComponentCreate(BaseModel):
     id: str                             # REQUIRED - Part number/SKU
@@ -49,3 +50,28 @@ class TeamComponentUpdate(BaseModel):
 class TeamImageUpdate(BaseModel):
     image_url: str                            # REQUIRED - CDN image URL
     description: Optional[str] = None         # OPTIONAL - Image description
+
+# === USER AUTHENTICATION SCHEMAS ===
+
+class UserCreate(BaseModel):
+    username: str                             # REQUIRED - Unique username
+    email: str                                # REQUIRED - Unique email
+    password: str                             # REQUIRED - Plain password (will be hashed)
+    team_id: Optional[str] = None             # OPTIONAL - Team ID
+
+class UserLogin(BaseModel):
+    username: str                             # REQUIRED - Username for login
+    password: str                             # REQUIRED - Password for login
+
+class Token(BaseModel):
+    access_token: str                         # JWT access token
+    token_type: str                           # Token type (bearer)
+
+class User(BaseModel):
+    id: int                                   # User ID
+    username: str                             # Username
+    email: str                                # Email
+    team_id: Optional[str] = None             # Team ID
+    role: str                                 # User role
+    is_active: bool                           # Account status
+    created_at: datetime                      # Account creation date

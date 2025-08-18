@@ -1,4 +1,4 @@
-from sqlalchemy import Table, Column, Integer, String, Float, ForeignKey, DateTime, Text
+from sqlalchemy import Table, Column, Integer, String, Float, ForeignKey, DateTime, Text, Boolean
 from sqlalchemy.sql import func
 from app.database import metadata
 
@@ -32,4 +32,17 @@ team_components = Table(
     Column("last_updated", DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),  # automatically set current time when inserted or updated
     Column("image_url", String),                                                                      # optional team image URL
     Column("cad_file_url", String),                                                                   # optional team CAD file URL
+)
+
+users = Table(
+    "users",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),                                      # unique user ID
+    Column("username", String, unique=True, nullable=False),                                          # unique username
+    Column("email", String, unique=True, nullable=False),                                             # unique email
+    Column("hashed_password", String, nullable=False),                                                # bcrypt hashed password
+    Column("team_id", String, nullable=True),                                                         # team the user belongs to
+    Column("role", String, default="member"),                                                         # user role (admin, member, etc.)
+    Column("is_active", Boolean, default=True),                                                       # account status
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),                        # when account was created
 )

@@ -1,11 +1,20 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from fastapi.security import OAuth2PasswordRequestForm
 from typing import List, Optional
+from datetime import timedelta
 from contextlib import asynccontextmanager
 from .database import database, metadata, engine
 from . import crud
-from .schemas import PublicComponentCreate, PublicComponentUpdate, TeamComponentCreate, TeamComponentUpdate, TeamImageUpdate
+from .schemas import (
+    PublicComponentCreate, PublicComponentUpdate, TeamComponentCreate, 
+    TeamComponentUpdate, TeamImageUpdate, UserCreate, UserLogin, Token, User
+)
+from .auth import (
+    authenticate_user, create_access_token, get_current_active_user, 
+    get_password_hash, check_team_access, ACCESS_TOKEN_EXPIRE_MINUTES
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,6 +46,61 @@ async def root():
 async def favicon():
     favicon_svg = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🤖</text></svg>"""
     return Response(content=favicon_svg, media_type="image/svg+xml")
+
+# === AUTHENTICATION ===
+
+@app.post("/register", response_model=dict, tags=["Authentication"])
+async def register_user(user: UserCreate):
+    existing_user = await crud.get_user_by_username(user.username)
+    if existing_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already registered")
+    
+    existing_email = await crud.get_user_by_email(user.email)
+    if existing_email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+    
+    hashed_password = get_password_hash(user.password)
+    user_data = {
+        "username": user.username,
+        "email": user.email,
+        "hashed_password": hashed_password,
+        "team_id": user.team_id,
+        "role": "member",
+        "is_active": True
+    }
+    
+    user_id = await crud.create_user(user_data)
+    return {
+        "id": user_id,
+        "message": f"User {user.username} registered successfully",
+        "username": user.username,
+        "team_id": user.team_id
+    }
+
+@app.post("/token", response_model=Token, tags=["Authentication"])
+async def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = await authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/users/me", response_model=User, tags=["Authentication"])
+async def read_users_me(current_user = Depends(get_current_active_user)):
+    return User(
+        id=current_user.id,
+        username=current_user.username,
+        email=current_user.email,
+        team_id=current_user.team_id,
+        role=current_user.role,
+        is_active=current_user.is_active,
+        created_at=current_user.created_at
+    )
 
 # === PUBLIC COMPONENTS ===
 
@@ -95,7 +159,9 @@ async def delete_public_component(component_id: str):
 # === TEAM COMPONENTS ===
 
 @app.post("/team-components/", tags=["Team Components"])
-async def create_team_component(component: TeamComponentCreate):
+async def create_team_component(component: TeamComponentCreate,current_user = Depends(get_current_active_user)):
+    check_team_access(current_user, component.team_id)
+    
     try:
         component_id = await crud.create_team_component(component.model_dump())
         return {"id": component_id, "message": "Team component created successfully"}
@@ -103,21 +169,27 @@ async def create_team_component(component: TeamComponentCreate):
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/teams/{team_id}/components", tags=["Team Components"])
-async def get_team_components(team_id: str):
+async def get_team_components(team_id: str,current_user = Depends(get_current_active_user)):
+    check_team_access(current_user, team_id)
+    
     components = await crud.get_team_components(team_id)
     return [dict(component) for component in components]
 
 @app.get("/team-components/{component_id}", tags=["Team Components"])
-async def get_team_component(component_id: int):
+async def get_team_component(component_id: int,current_user = Depends(get_current_active_user)):
     component = await crud.get_team_component(component_id)
     if not component:
         raise HTTPException(status_code=404, detail="Team component not found")
+    check_team_access(current_user, component.team_id)
+    
     return dict(component)
 
 @app.put("/team-components/{component_id}", tags=["Team Components"])
-async def update_team_component(component_id: int, component: TeamComponentUpdate):
-    if not await crud.get_team_component(component_id):
+async def update_team_component(component_id: int,component: TeamComponentUpdate,current_user = Depends(get_current_active_user)):
+    existing_component = await crud.get_team_component(component_id)
+    if not existing_component:
         raise HTTPException(status_code=404, detail="Team component not found")
+    check_team_access(current_user, existing_component.team_id)
     
     if not await crud.update_team_component(component_id, component.model_dump()):
         raise HTTPException(status_code=400, detail="No valid fields to update")
@@ -125,24 +197,29 @@ async def update_team_component(component_id: int, component: TeamComponentUpdat
     return {"message": "Team component updated successfully"}
 
 @app.delete("/team-components/{component_id}", tags=["Team Components"])
-async def delete_team_component(component_id: int):
-    if not await crud.delete_team_component(component_id):
+async def delete_team_component(component_id: int,current_user = Depends(get_current_active_user)):
+    existing_component = await crud.get_team_component(component_id)
+    if not existing_component:
         raise HTTPException(status_code=404, detail="Team component not found")
+    check_team_access(current_user, existing_component.team_id)
+    
+    if not await crud.delete_team_component(component_id):
+        raise HTTPException(status_code=500, detail="Failed to delete team component")
+    
     return {"message": "Team component deleted successfully"}
 
 @app.post("/teams/{team_id}/components/{component_id}/add-image", tags=["Team Images"])
-async def add_image_to_team_component(team_id: str, component_id: int, image_data: TeamImageUpdate):
+async def add_image_to_team_component(team_id: str, component_id: int, image_data: TeamImageUpdate, current_user = Depends(get_current_active_user)):
+    check_team_access(current_user, team_id)
+    
     component = await crud.get_team_component(component_id)
     if not component:
         raise HTTPException(status_code=404, detail="Team component not found")
-    
     if component.team_id != team_id:
         raise HTTPException(status_code=403, detail="Component does not belong to this team")
-    
     success = await crud.update_team_component_image(component_id, image_data.image_url)
     if not success:
         raise HTTPException(status_code=400, detail="Failed to update component image")
-    
     return {
         "message": "Image URL added to team component successfully",
         "team_id": team_id,
@@ -151,7 +228,9 @@ async def add_image_to_team_component(team_id: str, component_id: int, image_dat
     }
 
 @app.post("/teams/{team_id}/add-image", tags=["Team Images"])
-async def add_general_team_image(team_id: str, image_data: TeamImageUpdate):
+async def add_general_team_image(team_id: str, image_data: TeamImageUpdate, current_user = Depends(get_current_active_user)):
+    check_team_access(current_user, team_id)
+    
     image_id = await crud.create_team_image(team_id, image_data.image_url, image_data.description)
     return {
         "message": "Team image URL added successfully",

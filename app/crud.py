@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlalchemy import and_, or_, select
 from .database import database
-from .models import public_components, team_components
+from .models import public_components, team_components, users
 
 # === PUBLIC COMPONENTS ===
 
@@ -195,3 +195,21 @@ async def create_team_image(team_id: str, image_url: str, description: str = Non
     
     query = team_components.insert().values(**image_data)
     return await database.execute(query)
+
+# === USER MANAGEMENT ===
+
+async def create_user(user_data: dict):
+    query = users.insert().values(**user_data)
+    return await database.execute(query)
+
+async def get_user_by_id(user_id: int):
+    query = select(users).where(users.c.id == user_id)
+    return await database.fetch_one(query)
+
+async def get_user_by_username(username: str):
+    query = select(users).where(users.c.username == username)
+    return await database.fetch_one(query)
+
+async def get_user_by_email(email: str):
+    query = select(users).where(users.c.email == email)
+    return await database.fetch_one(query)
