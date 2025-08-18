@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from typing import List, Optional
 from contextlib import asynccontextmanager
 from .database import database, metadata, engine
@@ -31,6 +32,11 @@ app.add_middleware(
 @app.get("/", tags=["System"])
 async def root():
     return {"message": "FRC Components API is running!"}
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    favicon_svg = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🤖</text></svg>"""
+    return Response(content=favicon_svg, media_type="image/svg+xml")
 
 # === PUBLIC COMPONENTS ===
 
