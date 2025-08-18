@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, select
 from .database import database
 from .models import public_components, team_components
 
@@ -10,11 +10,11 @@ async def create_public_component(component_data: dict):
     return await database.execute(query)
 
 async def get_public_component(component_id: str):
-    query = public_components.select().where(public_components.c.id == component_id)
+    query = select(public_components).where(public_components.c.id == component_id)
     return await database.fetch_one(query)
 
 async def get_all_public_components():
-    query = public_components.select()
+    query = select(public_components)
     return await database.fetch_all(query)
 
 async def update_public_component(component_id: str, component_data: dict):
@@ -41,7 +41,7 @@ async def search_public_components(
     has_cad_files: Optional[bool] = None,
     has_images: Optional[bool] = None
 ):
-    query = public_components.select()
+    query = select(public_components)
     conditions = []
     
     if search_text:
@@ -77,30 +77,30 @@ async def search_public_components(
     return await database.fetch_all(query)
 
 async def get_categories():
-    query = public_components.select(public_components.c.category).distinct()
+    query = select(public_components.c.category).distinct()
     result = await database.fetch_all(query)
     return [row.category for row in result]
 
 async def get_vendors():
-    query = public_components.select(public_components.c.vendor).distinct()
+    query = select(public_components.c.vendor).distinct()
     result = await database.fetch_all(query)
     return [row.vendor for row in result]
 
 async def get_availability_statuses():
-    query = public_components.select(public_components.c.availability).distinct()
+    query = select(public_components.c.availability).distinct()
     result = await database.fetch_all(query)
     return [row.availability for row in result if row.availability]
 
 async def get_components_with_cad_files():
-    query = public_components.select().where(public_components.c.cad_file_url.isnot(None))
+    query = select(public_components).where(public_components.c.cad_file_url.isnot(None))
     return await database.fetch_all(query)
 
 async def get_components_with_images():
-    query = public_components.select().where(public_components.c.image_url.isnot(None))
+    query = select(public_components).where(public_components.c.image_url.isnot(None))
     return await database.fetch_all(query)
 
 async def get_team_components_with_cad_files(team_id: str):
-    query = team_components.select().where(
+    query = select(team_components).where(
         and_(
             team_components.c.team_id == team_id,
             team_components.c.cad_file_url.isnot(None)
@@ -109,7 +109,7 @@ async def get_team_components_with_cad_files(team_id: str):
     return await database.fetch_all(query)
 
 async def get_team_components_with_images(team_id: str):
-    query = team_components.select().where(
+    query = select(team_components).where(
         and_(
             team_components.c.team_id == team_id,
             team_components.c.image_url.isnot(None)
@@ -124,11 +124,11 @@ async def create_team_component(component_data: dict):
     return await database.execute(query)
 
 async def get_team_component(component_id: int):
-    query = team_components.select().where(team_components.c.id == component_id)
+    query = select(team_components).where(team_components.c.id == component_id)
     return await database.fetch_one(query)
 
 async def get_team_components(team_id: str):
-    query = team_components.select().where(team_components.c.team_id == team_id)
+    query = select(team_components).where(team_components.c.team_id == team_id)
     return await database.fetch_all(query)
 
 async def update_team_component(component_id: int, component_data: dict):
@@ -157,7 +157,7 @@ async def update_component_quantity(component_id: int, new_quantity: int):
 # === TEAM INVENTORY SUMMARY ===
 
 async def get_team_inventory_summary(team_id: str):
-    query = team_components.select().where(team_components.c.team_id == team_id)
+    query = select(team_components).where(team_components.c.team_id == team_id)
     components = await database.fetch_all(query)
     
     total_items = sum(comp.quantity for comp in components)
