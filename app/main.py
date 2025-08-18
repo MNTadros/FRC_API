@@ -47,6 +47,21 @@ async def get_public_components():
     components = await crud.get_all_public_components()
     return [dict(component) for component in components]
 
+@app.get("/public-components/search")
+async def search_public_components(
+    q: Optional[str] = Query(None, description="Search in name, description, and ID"),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    vendor: Optional[str] = Query(None, description="Filter by vendor"),
+    max_cost: Optional[float] = Query(None, description="Maximum cost"),
+    availability: Optional[str] = Query(None, description="Filter by availability status"),
+    has_cad_files: Optional[bool] = Query(None, description="Filter components with CAD files"),
+    has_images: Optional[bool] = Query(None, description="Filter components with images")
+):
+    components = await crud.search_public_components(
+        q, category, vendor, max_cost, availability, has_cad_files, has_images
+    )
+    return [dict(component) for component in components]
+
 @app.get("/public-components/{component_id}")
 async def get_public_component(component_id: str):
     component = await crud.get_public_component(component_id)
@@ -69,21 +84,6 @@ async def delete_public_component(component_id: str):
     if not await crud.delete_public_component(component_id):
         raise HTTPException(status_code=404, detail="Component not found")
     return {"message": "Component deleted successfully"}
-
-@app.get("/public-components/search")
-async def search_public_components(
-    q: Optional[str] = Query(None, description="Search in name, description, and ID"),
-    category: Optional[str] = Query(None, description="Filter by category"),
-    vendor: Optional[str] = Query(None, description="Filter by vendor"),
-    max_cost: Optional[float] = Query(None, description="Maximum cost"),
-    availability: Optional[str] = Query(None, description="Filter by availability status"),
-    has_cad_files: Optional[bool] = Query(None, description="Filter components with CAD files"),
-    has_images: Optional[bool] = Query(None, description="Filter components with images")
-):
-    components = await crud.search_public_components(
-        q, category, vendor, max_cost, availability, has_cad_files, has_images
-    )
-    return [dict(component) for component in components]
 
 # === TEAM COMPONENTS ===
 
