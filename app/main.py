@@ -28,13 +28,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
+@app.get("/", tags=["System"])
 async def root():
     return {"message": "FRC Components API is running!"}
 
 # === PUBLIC COMPONENTS ===
 
-@app.post("/public-components/")
+@app.post("/public-components/", tags=["Public Components"])
 async def create_public_component(component: PublicComponentCreate):
     try:
         await crud.create_public_component(component.model_dump())
@@ -42,34 +42,35 @@ async def create_public_component(component: PublicComponentCreate):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.get("/public-components/")
+@app.get("/public-components/", tags=["Public Components"])
 async def get_public_components():
     components = await crud.get_all_public_components()
     return [dict(component) for component in components]
 
-@app.get("/public-components/search")
+@app.get("/public-components/search", tags=["Public Components"])
 async def search_public_components(
     q: Optional[str] = Query(None, description="Search in name, description, and ID"),
     category: Optional[str] = Query(None, description="Filter by category"),
     vendor: Optional[str] = Query(None, description="Filter by vendor"),
+    min_cost: Optional[float] = Query(None, description="Minimum cost"),
     max_cost: Optional[float] = Query(None, description="Maximum cost"),
     availability: Optional[str] = Query(None, description="Filter by availability status"),
     has_cad_files: Optional[bool] = Query(None, description="Filter components with CAD files"),
     has_images: Optional[bool] = Query(None, description="Filter components with images")
 ):
     components = await crud.search_public_components(
-        q, category, vendor, max_cost, availability, has_cad_files, has_images
+        q, category, vendor, min_cost, max_cost, availability, has_cad_files, has_images
     )
     return [dict(component) for component in components]
 
-@app.get("/public-components/{component_id}")
+@app.get("/public-components/{component_id}", tags=["Public Components"])
 async def get_public_component(component_id: str):
     component = await crud.get_public_component(component_id)
     if not component:
         raise HTTPException(status_code=404, detail="Component not found")
     return dict(component)
 
-@app.put("/public-components/{component_id}")
+@app.put("/public-components/{component_id}", tags=["Public Components"])
 async def update_public_component(component_id: str, component: PublicComponentUpdate):
     if not await crud.get_public_component(component_id):
         raise HTTPException(status_code=404, detail="Component not found")
@@ -79,7 +80,7 @@ async def update_public_component(component_id: str, component: PublicComponentU
     
     return {"message": "Component updated successfully"}
 
-@app.delete("/public-components/{component_id}")
+@app.delete("/public-components/{component_id}", tags=["Public Components"])
 async def delete_public_component(component_id: str):
     if not await crud.delete_public_component(component_id):
         raise HTTPException(status_code=404, detail="Component not found")
@@ -87,7 +88,7 @@ async def delete_public_component(component_id: str):
 
 # === TEAM COMPONENTS ===
 
-@app.post("/team-components/")
+@app.post("/team-components/", tags=["Team Components"])
 async def create_team_component(component: TeamComponentCreate):
     try:
         component_id = await crud.create_team_component(component.model_dump())
@@ -95,19 +96,19 @@ async def create_team_component(component: TeamComponentCreate):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.get("/teams/{team_id}/components")
+@app.get("/teams/{team_id}/components", tags=["Team Components"])
 async def get_team_components(team_id: str):
     components = await crud.get_team_components(team_id)
     return [dict(component) for component in components]
 
-@app.get("/team-components/{component_id}")
+@app.get("/team-components/{component_id}", tags=["Team Components"])
 async def get_team_component(component_id: int):
     component = await crud.get_team_component(component_id)
     if not component:
         raise HTTPException(status_code=404, detail="Team component not found")
     return dict(component)
 
-@app.put("/team-components/{component_id}")
+@app.put("/team-components/{component_id}", tags=["Team Components"])
 async def update_team_component(component_id: int, component: TeamComponentUpdate):
     if not await crud.get_team_component(component_id):
         raise HTTPException(status_code=404, detail="Team component not found")
@@ -117,13 +118,13 @@ async def update_team_component(component_id: int, component: TeamComponentUpdat
     
     return {"message": "Team component updated successfully"}
 
-@app.delete("/team-components/{component_id}")
+@app.delete("/team-components/{component_id}", tags=["Team Components"])
 async def delete_team_component(component_id: int):
     if not await crud.delete_team_component(component_id):
         raise HTTPException(status_code=404, detail="Team component not found")
     return {"message": "Team component deleted successfully"}
 
-@app.post("/teams/{team_id}/components/{component_id}/add-image")
+@app.post("/teams/{team_id}/components/{component_id}/add-image", tags=["Team Images"])
 async def add_image_to_team_component(team_id: str, component_id: int, image_data: TeamImageUpdate):
     component = await crud.get_team_component(component_id)
     if not component:
@@ -143,7 +144,7 @@ async def add_image_to_team_component(team_id: str, component_id: int, image_dat
         "image_url": image_data.image_url
     }
 
-@app.post("/teams/{team_id}/add-image")
+@app.post("/teams/{team_id}/add-image", tags=["Team Images"])
 async def add_general_team_image(team_id: str, image_data: TeamImageUpdate):
     image_id = await crud.create_team_image(team_id, image_data.image_url, image_data.description)
     return {
@@ -155,38 +156,38 @@ async def add_general_team_image(team_id: str, image_data: TeamImageUpdate):
 
 # === UTILITY ENDPOINTS ===
 
-@app.get("/categories")
+@app.get("/categories", tags=["Utilities"])
 async def get_categories():
     return await crud.get_categories()
 
-@app.get("/vendors")
+@app.get("/vendors", tags=["Utilities"])
 async def get_vendors():
     return await crud.get_vendors()
 
-@app.get("/availability-statuses")
+@app.get("/availability-statuses", tags=["Utilities"])
 async def get_availability_statuses():
     return await crud.get_availability_statuses()
 
-@app.get("/components/with-cad-files")
+@app.get("/components/with-cad-files", tags=["Utilities"])
 async def get_components_with_cad_files():
     components = await crud.get_components_with_cad_files()
     return [dict(component) for component in components]
 
-@app.get("/components/with-images")
+@app.get("/components/with-images", tags=["Utilities"])
 async def get_components_with_images():
     components = await crud.get_components_with_images()
     return [dict(component) for component in components]
 
-@app.get("/teams/{team_id}/components/with-cad-files")
+@app.get("/teams/{team_id}/components/with-cad-files", tags=["Team Utilities"])
 async def get_team_components_with_cad_files(team_id: str):
     components = await crud.get_team_components_with_cad_files(team_id)
     return [dict(component) for component in components]
 
-@app.get("/teams/{team_id}/components/with-images")
+@app.get("/teams/{team_id}/components/with-images", tags=["Team Utilities"])
 async def get_team_components_with_images(team_id: str):
     components = await crud.get_team_components_with_images(team_id)
     return [dict(component) for component in components]
 
-@app.get("/teams/{team_id}/inventory/summary")
+@app.get("/teams/{team_id}/inventory/summary", tags=["Team Utilities"])
 async def get_team_inventory_summary(team_id: str):
     return await crud.get_team_inventory_summary(team_id)

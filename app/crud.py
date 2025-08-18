@@ -36,6 +36,7 @@ async def search_public_components(
     search_text: Optional[str] = None,
     category: Optional[str] = None,
     vendor: Optional[str] = None,
+    min_cost: Optional[float] = None,
     max_cost: Optional[float] = None,
     availability: Optional[str] = None,
     has_cad_files: Optional[bool] = None,
@@ -56,6 +57,8 @@ async def search_public_components(
         conditions.append(public_components.c.category.ilike(f"%{category}%"))
     if vendor:
         conditions.append(public_components.c.vendor.ilike(f"%{vendor}%"))
+    if min_cost:
+        conditions.append(public_components.c.cost >= min_cost)
     if max_cost:
         conditions.append(public_components.c.cost <= max_cost)
     if availability:
