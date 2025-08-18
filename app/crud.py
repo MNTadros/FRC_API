@@ -36,7 +36,10 @@ async def search_public_components(
     search_text: Optional[str] = None,
     category: Optional[str] = None,
     vendor: Optional[str] = None,
-    max_cost: Optional[float] = None
+    max_cost: Optional[float] = None,
+    availability: Optional[str] = None,
+    has_cad_files: Optional[bool] = None,
+    has_images: Optional[bool] = None
 ):
     query = public_components.select()
     conditions = []
@@ -45,7 +48,8 @@ async def search_public_components(
         conditions.append(
             or_(
                 public_components.c.name.ilike(f"%{search_text}%"),
-                public_components.c.description.ilike(f"%{search_text}%")
+                public_components.c.description.ilike(f"%{search_text}%"),
+                public_components.c.id.ilike(f"%{search_text}%")
             )
         )
     if category:
@@ -54,6 +58,18 @@ async def search_public_components(
         conditions.append(public_components.c.vendor.ilike(f"%{vendor}%"))
     if max_cost:
         conditions.append(public_components.c.cost <= max_cost)
+    if availability:
+        conditions.append(public_components.c.availability.ilike(f"%{availability}%"))
+    if has_cad_files is not None:
+        if has_cad_files:
+            conditions.append(public_components.c.cad_file_url.isnot(None))
+        else:
+            conditions.append(public_components.c.cad_file_url.is_(None))
+    if has_images is not None:
+        if has_images:
+            conditions.append(public_components.c.image_url.isnot(None))
+        else:
+            conditions.append(public_components.c.image_url.is_(None))
     
     if conditions:
         query = query.where(and_(*conditions))
@@ -69,6 +85,37 @@ async def get_vendors():
     query = public_components.select(public_components.c.vendor).distinct()
     result = await database.fetch_all(query)
     return [row.vendor for row in result]
+
+async def get_availability_statuses():
+    query = public_components.select(public_components.c.availability).distinct()
+    result = await database.fetch_all(query)
+    return [row.availability for row in result if row.availability]
+
+async def get_components_with_cad_files():
+    query = public_components.select().where(public_components.c.cad_file_url.isnot(None))
+    return await database.fetch_all(query)
+
+async def get_components_with_images():
+    query = public_components.select().where(public_components.c.image_url.isnot(None))
+    return await database.fetch_all(query)
+
+async def get_team_components_with_cad_files(team_id: str):
+    query = team_components.select().where(
+        and_(
+            team_components.c.team_id == team_id,
+            team_components.c.cad_file_url.isnot(None)
+        )
+    )
+    return await database.fetch_all(query)
+
+async def get_team_components_with_images(team_id: str):
+    query = team_components.select().where(
+        and_(
+            team_components.c.team_id == team_id,
+            team_components.c.image_url.isnot(None)
+        )
+    )
+    return await database.fetch_all(query)
 
 # === TEAM COMPONENTS ===
 

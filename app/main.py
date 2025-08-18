@@ -72,12 +72,17 @@ async def delete_public_component(component_id: str):
 
 @app.get("/public-components/search")
 async def search_public_components(
-    q: Optional[str] = Query(None, description="Search in name and description"),
+    q: Optional[str] = Query(None, description="Search in name, description, and ID"),
     category: Optional[str] = Query(None, description="Filter by category"),
     vendor: Optional[str] = Query(None, description="Filter by vendor"),
-    max_cost: Optional[float] = Query(None, description="Maximum cost")
+    max_cost: Optional[float] = Query(None, description="Maximum cost"),
+    availability: Optional[str] = Query(None, description="Filter by availability status"),
+    has_cad_files: Optional[bool] = Query(None, description="Filter components with CAD files"),
+    has_images: Optional[bool] = Query(None, description="Filter components with images")
 ):
-    components = await crud.search_public_components(q, category, vendor, max_cost)
+    components = await crud.search_public_components(
+        q, category, vendor, max_cost, availability, has_cad_files, has_images
+    )
     return [dict(component) for component in components]
 
 # === TEAM COMPONENTS ===
@@ -127,6 +132,30 @@ async def get_categories():
 @app.get("/vendors")
 async def get_vendors():
     return await crud.get_vendors()
+
+@app.get("/availability-statuses")
+async def get_availability_statuses():
+    return await crud.get_availability_statuses()
+
+@app.get("/components/with-cad-files")
+async def get_components_with_cad_files():
+    components = await crud.get_components_with_cad_files()
+    return [dict(component) for component in components]
+
+@app.get("/components/with-images")
+async def get_components_with_images():
+    components = await crud.get_components_with_images()
+    return [dict(component) for component in components]
+
+@app.get("/teams/{team_id}/components/with-cad-files")
+async def get_team_components_with_cad_files(team_id: str):
+    components = await crud.get_team_components_with_cad_files(team_id)
+    return [dict(component) for component in components]
+
+@app.get("/teams/{team_id}/components/with-images")
+async def get_team_components_with_images(team_id: str):
+    components = await crud.get_team_components_with_images(team_id)
+    return [dict(component) for component in components]
 
 @app.get("/teams/{team_id}/inventory/summary")
 async def get_team_inventory_summary(team_id: str):

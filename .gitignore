@@ -23,3 +23,6 @@ test.db
 .vscode/
 .idea/
 *.swp
+
+*.md
+!README.md

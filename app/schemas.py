@@ -9,6 +9,9 @@ class PublicComponentCreate(BaseModel):
     cost: float                         # REQUIRED - Price
     source: Optional[str] = None        # OPTIONAL - URL/link
     description: Optional[str] = None   # OPTIONAL - Details
+    image_url: Optional[str] = None     # OPTIONAL - Image URL
+    cad_file_url: Optional[str] = None  # OPTIONAL - CAD file URL
+    availability: Optional[str] = None  # OPTIONAL - Availability status
 
 class PublicComponentUpdate(BaseModel):
     name: Optional[str] = None
@@ -17,6 +20,9 @@ class PublicComponentUpdate(BaseModel):
     cost: Optional[float] = None
     source: Optional[str] = None
     description: Optional[str] = None
+    image_url: Optional[str] = None
+    cad_file_url: Optional[str] = None
+    availability: Optional[str] = None
 
 class TeamComponentCreate(BaseModel):
     team_id: str                              # REQUIRED - Which team
@@ -27,6 +33,8 @@ class TeamComponentCreate(BaseModel):
     location: Optional[str] = None            # OPTIONAL - Where stored
     notes: Optional[str] = None               # OPTIONAL - Team notes
     added_by: Optional[str] = None            # OPTIONAL - Who added it
+    image_url: Optional[str] = None           # OPTIONAL - Team image URL
+    cad_file_url: Optional[str] = None        # OPTIONAL - Team CAD file URL
 
 class TeamComponentUpdate(BaseModel):
     name: Optional[str] = None
@@ -35,3 +43,5 @@ class TeamComponentUpdate(BaseModel):
     location: Optional[str] = None
     notes: Optional[str] = None
     added_by: Optional[str] = None
+    image_url: Optional[str] = None
+    cad_file_url: Optional[str] = None

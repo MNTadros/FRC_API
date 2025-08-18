@@ -12,6 +12,9 @@ public_components = Table(
     Column("cost", Float, nullable=False),                                                            # price of the part
     Column("source", String),                                                                         # optional URL / item link
     Column("description", Text),                                                                      # optional description
+    Column("image_url", String),                                                                      # optional image URL
+    Column("cad_file_url", String),                                                                   # optional CAD file URL
+    Column("availability", String),                                                                   # availability status (In Stock, Out of Stock, etc.)
 )
 
 team_components = Table(
@@ -27,4 +30,6 @@ team_components = Table(
     Column("notes", Text),                                                                            # anything the team wants to add
     Column("added_by", String),                                                                       # who added it
     Column("last_updated", DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),  # automatically set current time when inserted or updated
+    Column("image_url", String),                                                                      # optional team image URL
+    Column("cad_file_url", String),                                                                   # optional team CAD file URL
 )
