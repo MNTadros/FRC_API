@@ -45,3 +45,7 @@ class TeamComponentUpdate(BaseModel):
     added_by: Optional[str] = None
     image_url: Optional[str] = None
     cad_file_url: Optional[str] = None
+
+class TeamImageUpdate(BaseModel):
+    image_url: str                            # REQUIRED - CDN image URL
+    description: Optional[str] = None         # OPTIONAL - Image description

@@ -4,7 +4,7 @@ from typing import List, Optional
 from contextlib import asynccontextmanager
 from .database import database, metadata, engine
 from . import crud
-from .schemas import PublicComponentCreate, PublicComponentUpdate, TeamComponentCreate, TeamComponentUpdate
+from .schemas import PublicComponentCreate, PublicComponentUpdate, TeamComponentCreate, TeamComponentUpdate, TeamImageUpdate
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -122,6 +122,36 @@ async def delete_team_component(component_id: int):
     if not await crud.delete_team_component(component_id):
         raise HTTPException(status_code=404, detail="Team component not found")
     return {"message": "Team component deleted successfully"}
+
+@app.post("/teams/{team_id}/components/{component_id}/add-image")
+async def add_image_to_team_component(team_id: str, component_id: int, image_data: TeamImageUpdate):
+    component = await crud.get_team_component(component_id)
+    if not component:
+        raise HTTPException(status_code=404, detail="Team component not found")
+    
+    if component.team_id != team_id:
+        raise HTTPException(status_code=403, detail="Component does not belong to this team")
+    
+    success = await crud.update_team_component_image(component_id, image_data.image_url)
+    if not success:
+        raise HTTPException(status_code=400, detail="Failed to update component image")
+    
+    return {
+        "message": "Image URL added to team component successfully",
+        "team_id": team_id,
+        "component_id": component_id,
+        "image_url": image_data.image_url
+    }
+
+@app.post("/teams/{team_id}/add-image")
+async def add_general_team_image(team_id: str, image_data: TeamImageUpdate):
+    image_id = await crud.create_team_image(team_id, image_data.image_url, image_data.description)
+    return {
+        "message": "Team image URL added successfully",
+        "team_id": team_id,
+        "image_id": image_id,
+        "image_url": image_data.image_url
+    }
 
 # === UTILITY ENDPOINTS ===
 

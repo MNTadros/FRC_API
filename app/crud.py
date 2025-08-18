@@ -168,3 +168,27 @@ async def get_team_inventory_summary(team_id: str):
         "total_items": total_items,
         "unique_components": unique_components
     }
+
+# === TEAM IMAGE MANAGEMENT ===
+
+async def update_team_component_image(component_id: int, image_url: str) -> bool:
+    query = team_components.update().where(
+        team_components.c.id == component_id
+    ).values(image_url=image_url)
+    result = await database.execute(query)
+    return result > 0
+
+async def create_team_image(team_id: str, image_url: str, description: str = None) -> int:
+
+    image_data = {
+        "team_id": team_id,
+        "name": f"Team {team_id} Image",
+        "vendor": "Team Upload",
+        "quantity": 1,
+        "image_url": image_url,
+        "notes": description or "Team image uploaded via CDN link",
+        "location": "Digital/CDN"
+    }
+    
+    query = team_components.insert().values(**image_data)
+    return await database.execute(query)
